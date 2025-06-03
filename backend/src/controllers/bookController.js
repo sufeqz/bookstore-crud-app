@@ -5,36 +5,88 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
-// 📋 Get all books for the authenticated user
+// 📋 Get all books for the authenticated user with pagination and search
 const getBooks = async (req, res) => {
   try {
-    const books = await prisma.book.findMany({
-      where: { userId: req.user.id },
-      include: {
-        category: true,
-        user: {
-          select: { id: true, name: true, email: true }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      category = '',
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
 
-    res.json(books);
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit))); // Max 100 items per page
+    const skip = (pageNum - 1) * limitNum;
+
+    // 🔍 Build search conditions (removed userId filter - show all books to all users)
+    const whereConditions = {
+      ...(search && {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { author: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } }
+        ]
+      }),
+      ...(category && {
+        category: { name: { contains: category, mode: 'insensitive' } }
+      })
+    };
+
+    const [books, totalCount] = await Promise.all([
+      prisma.book.findMany({
+        where: whereConditions,
+        include: {
+          category: true,
+          user: {
+            select: { id: true, name: true, email: true }
+          }
+        },
+        orderBy: { [sortBy]: sortOrder },
+        skip,
+        take: limitNum
+      }),
+      prisma.book.count({ where: whereConditions })
+    ]);
+
+    // 📊 Calculate pagination info
+    const totalPages = Math.ceil(totalCount / limitNum);
+    const hasNextPage = pageNum < totalPages;
+    const hasPrevPage = pageNum > 1;
+
+    res.json({
+      books,
+      pagination: {
+        currentPage: pageNum,
+        totalPages,
+        totalCount,
+        limit: limitNum,
+        hasNextPage,
+        hasPrevPage
+      },
+      filters: {
+        search,
+        category,
+        sortBy,
+        sortOrder
+      }
+    });
   } catch (error) {
     console.error('Get books error:', error);
     res.status(500).json({ error: 'Failed to fetch books' });
   }
 };
 
-// 👁️ Get a specific book
 const getBook = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const book = await prisma.book.findFirst({
+    const book = await prisma.book.findUnique({
       where: { 
-        id: parseInt(id),
-        userId: req.user.id // Ensure user can only access their own books
+        id: parseInt(id)
+        // Removed userId filter - allow any user to view any book
       },
       include: {
         category: true,
@@ -55,12 +107,12 @@ const getBook = async (req, res) => {
   }
 };
 
-// ➕ Create a new book
+
 const createBook = async (req, res) => {
   try {
     const { title, author, description, price, categoryId } = req.body;
 
-    // ✅ Validation
+    
     if (!title || !author || !price || !categoryId) {
       return res.status(400).json({ 
         error: 'Title, author, price, and category are required' 
@@ -105,13 +157,13 @@ const createBook = async (req, res) => {
   }
 };
 
-// ✏️ Update a book
+// ✏️ Update a book (PATCH - partial update)
 const updateBook = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, author, description, price, categoryId } = req.body;
+    const updateData = req.body;
 
-    // 🔍 Check if book exists and belongs to user
+    // 🔍 Check if book exists and belongs to user (only owner can update)
     const existingBook = await prisma.book.findFirst({
       where: { 
         id: parseInt(id),
@@ -120,33 +172,80 @@ const updateBook = async (req, res) => {
     });
 
     if (!existingBook) {
-      return res.status(404).json({ error: 'Book not found' });
+      return res.status(404).json({ 
+        error: 'Book not found or you are not authorized to update this book' 
+      });
     }
 
-    // ✅ Validation for provided fields
-    if (price !== undefined && price < 0) {
-      return res.status(400).json({ error: 'Price cannot be negative' });
+    // 🧹 Remove undefined/null values and prepare update object
+    const fieldsToUpdate = {};
+    
+    // Only include fields that are provided and not empty
+    if (updateData.title !== undefined && updateData.title.trim() !== '') {
+      fieldsToUpdate.title = updateData.title.trim();
     }
-
-    if (categoryId) {
+    
+    if (updateData.author !== undefined && updateData.author.trim() !== '') {
+      fieldsToUpdate.author = updateData.author.trim();
+    }
+    
+    if (updateData.description !== undefined) {
+      fieldsToUpdate.description = updateData.description ? updateData.description.trim() : null;
+    }
+    
+    if (updateData.price !== undefined) {
+      const price = parseFloat(updateData.price);
+      if (isNaN(price) || price < 0) {
+        return res.status(400).json({ error: 'Price must be a valid positive number' });
+      }
+      fieldsToUpdate.price = price;
+    }
+    
+    if (updateData.categoryId !== undefined) {
+      const categoryId = parseInt(updateData.categoryId);
+      if (isNaN(categoryId)) {
+        return res.status(400).json({ error: 'Category ID must be a valid number' });
+      }
+      
+      // Verify category exists
       const category = await prisma.category.findUnique({
-        where: { id: parseInt(categoryId) }
+        where: { id: categoryId }
       });
       if (!category) {
         return res.status(400).json({ error: 'Invalid category' });
       }
+      fieldsToUpdate.categoryId = categoryId;
     }
 
-    // 📝 Update book
+    // 🚫 Check if there are any fields to update
+    if (Object.keys(fieldsToUpdate).length === 0) {
+      return res.status(400).json({ error: 'No valid fields provided for update' });
+    }
+
+    // 🔍 Check for duplicate title/author combination (if title or author is being updated)
+    if (fieldsToUpdate.title || fieldsToUpdate.author) {
+      const titleToCheck = fieldsToUpdate.title || existingBook.title;
+      const authorToCheck = fieldsToUpdate.author || existingBook.author;
+      
+      const duplicateBook = await prisma.book.findFirst({
+        where: {
+          title: titleToCheck,
+          author: authorToCheck,
+          id: { not: parseInt(id) } // Exclude current book
+        }
+      });
+      
+      if (duplicateBook) {
+        return res.status(400).json({ 
+          error: 'A book with this title and author already exists' 
+        });
+      }
+    }
+
+    // 📝 Update book with only the provided fields
     const updatedBook = await prisma.book.update({
       where: { id: parseInt(id) },
-      data: {
-        ...(title && { title }),
-        ...(author && { author }),
-        ...(description !== undefined && { description }),
-        ...(price !== undefined && { price: parseFloat(price) }),
-        ...(categoryId && { categoryId: parseInt(categoryId) })
-      },
+      data: fieldsToUpdate,
       include: {
         category: true,
         user: {
@@ -155,7 +254,11 @@ const updateBook = async (req, res) => {
       }
     });
 
-    res.json(updatedBook);
+    res.json({
+      message: 'Book updated successfully',
+      book: updatedBook,
+      updatedFields: Object.keys(fieldsToUpdate)
+    });
   } catch (error) {
     console.error('Update book error:', error);
     res.status(500).json({ error: 'Failed to update book' });
@@ -167,7 +270,7 @@ const deleteBook = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 🔍 Check if book exists and belongs to user
+    // 🔍 Check if book exists and belongs to user (only owner can delete)
     const existingBook = await prisma.book.findFirst({
       where: { 
         id: parseInt(id),
@@ -176,7 +279,9 @@ const deleteBook = async (req, res) => {
     });
 
     if (!existingBook) {
-      return res.status(404).json({ error: 'Book not found' });
+      return res.status(404).json({ 
+        error: 'Book not found or you are not authorized to delete this book' 
+      });
     }
 
     // 🗑️ Delete book

@@ -40,6 +40,9 @@ model Book {
   // 🏷️ Relationship: A book belongs to a category
   categoryId  Int
   category    Category @relation(fields: [categoryId], references: [id])
+
+  // Unique constraint to prevent duplicate books by same author
+  @@unique([title, author], name: "title_author")
 }
 
 // 🏷️ Category model for organizing books

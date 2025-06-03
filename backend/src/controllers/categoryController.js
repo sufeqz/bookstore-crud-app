@@ -5,19 +5,67 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
-// 📋 Get all categories
+
 const getCategories = async (req, res) => {
   try {
-    const categories = await prisma.category.findMany({
-      include: {
-        _count: {
-          select: { books: true }
-        }
-      },
-      orderBy: { name: 'asc' }
-    });
+ 
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      sortBy = 'name',
+      sortOrder = 'asc',
+      includeBooksCount = 'true'
+    } = req.query;
 
-    res.json(categories);
+
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit))); // Max 100 items per page
+    const skip = (pageNum - 1) * limitNum;
+
+    const whereConditions = search ? {
+      OR: [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } }
+      ]
+    } : {};
+
+    const [categories, totalCount] = await Promise.all([
+      prisma.category.findMany({
+        where: whereConditions,
+        include: includeBooksCount === 'true' ? {
+          _count: {
+            select: { books: true }
+          }
+        } : undefined,
+        orderBy: { [sortBy]: sortOrder },
+        skip,
+        take: limitNum
+      }),
+      prisma.category.count({ where: whereConditions })
+    ]);
+
+    // 📊 Calculate pagination info
+    const totalPages = Math.ceil(totalCount / limitNum);
+    const hasNextPage = pageNum < totalPages;
+    const hasPrevPage = pageNum > 1;
+
+    res.json({
+      categories,
+      pagination: {
+        currentPage: pageNum,
+        totalPages,
+        totalCount,
+        limit: limitNum,
+        hasNextPage,
+        hasPrevPage
+      },
+      filters: {
+        search,
+        sortBy,
+        sortOrder
+      }
+    });
   } catch (error) {
     console.error('Get categories error:', error);
     res.status(500).json({ error: 'Failed to fetch categories' });
@@ -30,13 +78,15 @@ const createCategory = async (req, res) => {
     const { name, description } = req.body;
 
     // ✅ Validation
-    if (!name) {
+    if (!name || name.trim() === '') {
       return res.status(400).json({ error: 'Category name is required' });
     }
 
+    const trimmedName = name.trim();
+
     // 🔍 Check if category already exists
     const existingCategory = await prisma.category.findUnique({
-      where: { name }
+      where: { name: trimmedName }
     });
 
     if (existingCategory) {
@@ -46,19 +96,175 @@ const createCategory = async (req, res) => {
     // 🏷️ Create category
     const category = await prisma.category.create({
       data: {
-        name,
-        description
+        name: trimmedName,
+        description: description ? description.trim() : null
       }
     });
 
-    res.status(201).json(category);
+    res.status(201).json({
+      message: 'Category created successfully',
+      category
+    });
   } catch (error) {
     console.error('Create category error:', error);
     res.status(500).json({ error: 'Failed to create category' });
   }
 };
 
+// 👁️ Get a specific category
+const getCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const category = await prisma.category.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        _count: {
+          select: { books: true }
+        },
+        books: {
+          select: {
+            id: true,
+            title: true,
+            author: true,
+            price: true,
+            createdAt: true
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10 // Limit to 10 recent books
+        }
+      }
+    });
+
+    if (!category) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    res.json(category);
+  } catch (error) {
+    console.error('Get category error:', error);
+    res.status(500).json({ error: 'Failed to fetch category' });
+  }
+};
+
+// ✏️ Update a category (PATCH - partial update)
+const updateCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // 🔍 Check if category exists
+    const existingCategory = await prisma.category.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!existingCategory) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    // 🧹 Prepare update object
+    const fieldsToUpdate = {};
+    
+    if (updateData.name !== undefined && updateData.name.trim() !== '') {
+      const trimmedName = updateData.name.trim();
+      
+      // Check for duplicate name
+      const duplicateCategory = await prisma.category.findFirst({
+        where: {
+          name: trimmedName,
+          id: { not: parseInt(id) }
+        }
+      });
+      
+      if (duplicateCategory) {
+        return res.status(400).json({ 
+          error: 'A category with this name already exists' 
+        });
+      }
+      
+      fieldsToUpdate.name = trimmedName;
+    }
+    
+    if (updateData.description !== undefined) {
+      fieldsToUpdate.description = updateData.description ? updateData.description.trim() : null;
+    }
+
+    // 🚫 Check if there are any fields to update
+    if (Object.keys(fieldsToUpdate).length === 0) {
+      return res.status(400).json({ error: 'No valid fields provided for update' });
+    }
+
+    // 📝 Update category
+    const updatedCategory = await prisma.category.update({
+      where: { id: parseInt(id) },
+      data: fieldsToUpdate,
+      include: {
+        _count: {
+          select: { books: true }
+        }
+      }
+    });
+
+    res.json({
+      message: 'Category updated successfully',
+      category: updatedCategory,
+      updatedFields: Object.keys(fieldsToUpdate)
+    });
+  } catch (error) {
+    console.error('Update category error:', error);
+    res.status(500).json({ error: 'Failed to update category' });
+  }
+};
+
+// 🗑️ Delete a category
+const deleteCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 🔍 Check if category exists
+    const existingCategory = await prisma.category.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        _count: {
+          select: { books: true }
+        }
+      }
+    });
+
+    if (!existingCategory) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    // 🚫 Check if category has books
+    if (existingCategory._count.books > 0) {
+      return res.status(400).json({ 
+        error: `Cannot delete category. It has ${existingCategory._count.books} book(s) associated with it.`,
+        booksCount: existingCategory._count.books
+      });
+    }
+
+    // 🗑️ Delete category
+    await prisma.category.delete({
+      where: { id: parseInt(id) }
+    });
+
+    res.json({ 
+      message: 'Category deleted successfully',
+      deletedCategory: {
+        id: existingCategory.id,
+        name: existingCategory.name
+      }
+    });
+  } catch (error) {
+    console.error('Delete category error:', error);
+    res.status(500).json({ error: 'Failed to delete category' });
+  }
+};
+
 module.exports = {
   getCategories,
-  createCategory
+  getCategory,
+  createCategory,
+  updateCategory,
+  deleteCategory
 };
