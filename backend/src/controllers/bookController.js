@@ -14,7 +14,7 @@ const getBooks = async (req, res) => {
     } = req.query;
 
     const pageNum = Math.max(1, parseInt(page));
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit))); // Max 100 items per page
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit))); /// Max 100 items per page
     const skip = (pageNum - 1) * limitNum;
 
     const whereConditions = {
