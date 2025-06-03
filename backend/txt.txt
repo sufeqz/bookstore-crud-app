@@ -1,0 +1,108 @@
+## Backend
+
+npm init -y
+npm install express prisma @prisma/client
+npm install -D prisma
+npx prisma init
+
+Configure PostgreSQL connection
+Edit .env and schema.prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+## Project structure example:
+
+bookstore-pgsql/
+│
+├── prisma/
+│   └── schema.prisma        # Prisma schema
+│
+├── src/
+│   ├── controllers/
+│   │   └── bookController.js
+│   ├── routes/
+│   │   └── bookRoutes.js
+│   ├── services/
+│   │   └── bookService.js
+│   ├── models/
+│   │   └── prismaClient.js
+│   └── app.js               # Express app setup
+│
+├── .env
+├── package.json
+└── index.js                 # Server start point
+
+--> Setup Prisma client
+
+const { PrismaClient } = require('@prisma/client');
+
+const prisma = new PrismaClient({
+  log: ['query', 'info', 'warn', 'error'],
+});
+
+// Handle graceful shutdown
+process.on('beforeExit', async () => {
+  await prisma.$disconnect();
+});
+
+module.exports = prisma;
+
+--> Create Service Layer
+
+const prisma = require('../models/prismaClient');
+
+const createBook = async(data) => {
+    return await prisma.book.create({data});
+}
+
+const getAllBooks = async() => {
+    return await prisma.book.findMany();
+}
+
+const getBookById = async (id) => {
+  return await prisma.book.findUnique({ where: { id } });
+};
+
+const updateBook = async (id, data) => {
+    return await prisma.book.update({
+        where: {id},
+        data
+    });
+}
+
+const deleteBook = async (id) => {
+    return await prisma.book.delete({
+        where: {id}
+    });
+}
+
+module.exports = {
+    createBook,
+    getAllBooks,
+    getBookById,
+    updateBook,
+    deleteBook
+}
+
+
+## Frontend
+
+npx create-react-app crud-frontend
+install axios react-router-dom 
+
+[axios: For making HTTP requests to your backend API
+react-router-dom: For navigation between pages (Login, Books, etc.)]
+
+
+
+
+
+
+
+
