@@ -19,17 +19,17 @@ const Dashboard = () => {
       try {
         setLoading(true);
         const [booksResponse, categoriesResponse] = await Promise.all([
-          bookService.getBooks(),
-          categoryService.getCategories()
+          bookService.getAllBooks({ limit: 5 }), // Get first 5 books for recent books
+          categoryService.getAllCategories()
         ]);
 
         setStats({
-          totalBooks: booksResponse.data.length,
-          totalCategories: categoriesResponse.data.length
+          totalBooks: booksResponse.pagination.totalCount,
+          totalCategories: categoriesResponse.pagination.totalCount
         });
 
-        // Show only the first 5 books as recent books
-        setRecentBooks(booksResponse.data.slice(0, 5));
+        // Show only the books from the response (already limited to 5)
+        setRecentBooks(booksResponse.books || []);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
