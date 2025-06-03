@@ -143,7 +143,7 @@ const BookList = () => {
             {/* Books Grid */}
             {books.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">📚</div>
+                <div className="empty-icon">⚃</div>
                 <h3>No books found</h3>
                 <p>
                   {searchTerm 

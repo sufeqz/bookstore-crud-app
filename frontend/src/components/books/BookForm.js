@@ -157,7 +157,7 @@ const BookForm = () => {
           <h1>{isEditing ? 'Edit Book' : 'Add New Book'}</h1>
           <p>{isEditing ? 'Update book information' : 'Add a new book to your library'}</p>
           <Link to="/books" className="btn btn-secondary">
-            ← Back to Books
+            &larr; Back to Books
           </Link>
         </div>
 
