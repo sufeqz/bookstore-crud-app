@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Navigation from '../components/Navigation';
 import { categoryService } from '../services/categoryService';
 import CategoryForm from '../components/CategoryForm';
@@ -8,37 +8,69 @@ import './Categories.css';
 const Categories = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalCount: 0,
+    limit: 20
+  });
+
+  const fetchCategories = useCallback(async (page = 1) => {
+    try {
+      setSearchLoading(true);
+      setError('');
+      
+      const params = {
+        page,
+        limit: pagination.limit,
+        includeBooksCount: 'true',
+        ...(searchTerm && { search: searchTerm })
+      };
+      
+      const response = await categoryService.getAllCategories(params);
+      
+      // Extract categories and pagination from response
+      const categoriesData = response.categories || [];
+      const paginationData = response.pagination || {};
+      
+      setCategories(categoriesData);
+      setPagination(paginationData);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setError(`Failed to load categories: ${error.response?.data?.error || error.message}`);
+    } finally {
+      setSearchLoading(false);
+      setLoading(false);
+    }
+  }, [searchTerm, pagination.limit]);
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [fetchCategories]);
 
-  const fetchCategories = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const response = await categoryService.getCategories();
-      setCategories(response.data);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      setError('Failed to load categories');
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchCategories();
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, fetchCategories]);
 
   const handleCreateCategory = async (categoryData) => {
     try {
       const response = await categoryService.createCategory(categoryData);
-      setCategories([...categories, response.data]);
       setShowForm(false);
       setError('');
-      setSuccessMessage(`Category "${response.data.name}" created successfully!`);
+      setSuccessMessage(`Category "${response.name}" created successfully!`);
+      
+      // Refresh the categories list to show the new category
+      fetchCategories(pagination.currentPage);
       
       // Clear success message after 5 seconds
       setTimeout(() => {
@@ -54,13 +86,13 @@ const Categories = () => {
   const handleUpdateCategory = async (categoryData) => {
     try {
       const response = await categoryService.updateCategory(editingCategory.id, categoryData);
-      setCategories(categories.map(category => 
-        category.id === editingCategory.id ? response.data : category
-      ));
       setEditingCategory(null);
       setShowForm(false);
       setError('');
-      setSuccessMessage(`Category "${response.data.name}" updated successfully!`);
+      setSuccessMessage(`Category "${response.name}" updated successfully!`);
+      
+      // Refresh the categories list to show the updated category
+      fetchCategories(pagination.currentPage);
       
       // Clear success message after 5 seconds
       setTimeout(() => {
@@ -82,7 +114,6 @@ const Categories = () => {
       // Find the category being deleted to get its name for the success message
       const categoryToDelete = categories.find(category => category.id === categoryId);
       await categoryService.deleteCategory(categoryId);
-      setCategories(categories.filter(category => category.id !== categoryId));
       setError('');
       
       if (categoryToDelete) {
@@ -93,6 +124,9 @@ const Categories = () => {
           setSuccessMessage('');
         }, 5000);
       }
+
+      // Refresh the categories list from server
+      fetchCategories(pagination.currentPage);
     } catch (error) {
       console.error('Error deleting category:', error);
       setError('Failed to delete category. It may be in use by some books.');
@@ -110,10 +144,9 @@ const Categories = () => {
     setEditingCategory(null);
   };
 
-  const filteredCategories = categories.filter(category =>
-    category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const handlePageChange = (newPage) => {
+    fetchCategories(newPage);
+  };
 
   if (loading) {
     return (
@@ -177,11 +210,43 @@ const Categories = () => {
           />
         )}
 
+        {searchLoading && (
+          <div className="search-loading">
+            Searching...
+          </div>
+        )}
+
         <CategoryList
-          categories={filteredCategories}
+          categories={categories}
           onEdit={handleEditCategory}
           onDelete={handleDeleteCategory}
         />
+
+        {/* Pagination Controls */}
+        {pagination.totalPages > 1 && (
+          <div className="pagination">
+            <button 
+              onClick={() => handlePageChange(pagination.currentPage - 1)}
+              disabled={!pagination.hasPrevPage}
+              className="pagination-btn"
+            >
+              Previous
+            </button>
+            
+            <span className="pagination-info">
+              Page {pagination.currentPage} of {pagination.totalPages} 
+              ({pagination.totalCount} total categories)
+            </span>
+            
+            <button 
+              onClick={() => handlePageChange(pagination.currentPage + 1)}
+              disabled={!pagination.hasNextPage}
+              className="pagination-btn"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

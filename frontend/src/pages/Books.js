@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Navigation from '../components/Navigation';
 import { bookService } from '../services/bookService';
 import { categoryService } from '../services/categoryService';
@@ -10,62 +10,97 @@ const Books = () => {
   const [books, setBooks] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingBook, setEditingBook] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalCount: 0,
+    limit: 20
+  });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchCategories = async () => {
     try {
-      setLoading(true);
+      const categoriesResponse = await categoryService.getCategories({ limit: 100 });
+      const categoriesData = categoriesResponse.data?.categories || categoriesResponse.data || [];
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setError('Failed to load categories');
+    }
+  };
+
+  const fetchBooks = useCallback(async (page = 1) => {
+    try {
+      setSearchLoading(true);
       setError('');
       
       // Check if user is authenticated
       const token = localStorage.getItem('token');
       console.log('Token exists:', !!token);
       
-      const [booksResponse, categoriesResponse] = await Promise.all([
-        bookService.getBooks(),
-        categoryService.getCategories()
-      ]);
+      const params = {
+        page,
+        limit: pagination.limit,
+        ...(searchTerm && { search: searchTerm }),
+        ...(filterCategory && { categoryId: filterCategory })
+      };
+      
+      console.log('Fetching books with params:', params);
+      
+      const booksResponse = await bookService.getAllBooks(params);
       
       console.log('Books response:', booksResponse);
-      console.log('Categories response:', categoriesResponse);
       
-      // Ensure we have valid arrays with proper data
-      const booksData = booksResponse.data || [];
-      const categoriesData = categoriesResponse.data || [];
+      // Extract books and pagination from response
+      const booksData = booksResponse.books || [];
+      const paginationData = booksResponse.pagination || {};
       
       // Filter out any invalid book entries
       const validBooks = booksData.filter(book => book && book.id && book.title && book.author);
       
       setBooks(validBooks);
-      setCategories(categoriesData);
+      setPagination(paginationData);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching books:', error);
       console.error('Error details:', error.response?.data);
       console.error('Error status:', error.response?.status);
-      setError(`Failed to load books and categories: ${error.response?.data?.error || error.message}`);
+      setError(`Failed to load books: ${error.response?.data?.error || error.message}`);
     } finally {
+      setSearchLoading(false);
       setLoading(false);
     }
-  };
+  }, [searchTerm, filterCategory, pagination.limit]);
+
+  useEffect(() => {
+    fetchCategories();
+    fetchBooks();
+  }, [fetchBooks]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchBooks();
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, filterCategory, fetchBooks]);
 
   const handleCreateBook = async (bookData) => {
     try {
       const response = await bookService.createBook(bookData);
-      // Ensure the response is a valid book object before adding to state
+      // Ensure the response is a valid book object
       if (response && response.id && response.title && response.author) {
-        setBooks([...books, response]);
         setShowForm(false);
         setError('');
         setSuccessMessage(`Book "${response.title}" added successfully!`);
+        
+        // Refresh the books list to show the new book
+        fetchBooks(pagination.currentPage);
         
         // Clear success message after 5 seconds
         setTimeout(() => {
@@ -85,15 +120,15 @@ const Books = () => {
   const handleUpdateBook = async (bookData) => {
     try {
       const response = await bookService.updateBook(editingBook.id, bookData);
-      // Ensure the response is a valid book object before updating state
+      // Ensure the response is a valid book object
       if (response && response.id && response.title && response.author) {
-        setBooks(books.map(book => 
-          book.id === editingBook.id ? response : book
-        ));
         setEditingBook(null);
         setShowForm(false);
         setError('');
         setSuccessMessage(`Book "${response.title}" updated successfully!`);
+        
+        // Refresh the books list to show the updated book
+        fetchBooks(pagination.currentPage);
         
         // Clear success message after 5 seconds
         setTimeout(() => {
@@ -119,7 +154,6 @@ const Books = () => {
       // Find the book being deleted to get its title for the success message
       const bookToDelete = books.find(book => book.id === bookId);
       await bookService.deleteBook(bookId);
-      setBooks(books.filter(book => book.id !== bookId));
       setError('');
       
       if (bookToDelete) {
@@ -130,6 +164,9 @@ const Books = () => {
           setSuccessMessage('');
         }, 5000);
       }
+
+      // Refresh the books list from server
+      fetchBooks(pagination.currentPage);
     } catch (error) {
       console.error('Error deleting book:', error);
       setError('Failed to delete book');
@@ -147,17 +184,9 @@ const Books = () => {
     setEditingBook(null);
   };
 
-  const filteredBooks = books.filter(book => {
-    // Check if book exists and has required properties
-    if (!book || !book.title || !book.author) {
-      return false;
-    }
-    
-    const matchesSearch = book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         book.author.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !filterCategory || book.categoryId === parseInt(filterCategory);
-    return matchesSearch && matchesCategory;
-  });
+  const handlePageChange = (newPage) => {
+    fetchBooks(newPage);
+  };
 
   if (loading) {
     return (
@@ -236,12 +265,44 @@ const Books = () => {
           />
         )}
 
+        {searchLoading && (
+          <div className="search-loading">
+            Searching...
+          </div>
+        )}
+
         <BookList
-          books={filteredBooks}
+          books={books}
           categories={categories}
           onEdit={handleEditBook}
           onDelete={handleDeleteBook}
         />
+
+        {/* Pagination Controls */}
+        {pagination.totalPages > 1 && (
+          <div className="pagination">
+            <button 
+              onClick={() => handlePageChange(pagination.currentPage - 1)}
+              disabled={!pagination.hasPrevPage}
+              className="pagination-btn"
+            >
+              Previous
+            </button>
+            
+            <span className="pagination-info">
+              Page {pagination.currentPage} of {pagination.totalPages} 
+              ({pagination.totalCount} total books)
+            </span>
+            
+            <button 
+              onClick={() => handlePageChange(pagination.currentPage + 1)}
+              disabled={!pagination.hasNextPage}
+              className="pagination-btn"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

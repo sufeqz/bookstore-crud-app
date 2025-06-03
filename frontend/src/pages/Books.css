@@ -142,6 +142,52 @@
   font-size: 1.1rem;
 }
 
+.search-loading {
+  text-align: center;
+  padding: 1rem;
+  color: #4299e1;
+  font-size: 0.9rem;
+  background: #ebf8ff;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+/* Pagination Styles */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1rem;
+}
+
+.pagination-btn {
+  background: #4299e1;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #3182ce;
+}
+
+.pagination-btn:disabled {
+  background: #a0aec0;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  color: #718096;
+  font-size: 0.9rem;
+  margin: 0 1rem;
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .books-content {

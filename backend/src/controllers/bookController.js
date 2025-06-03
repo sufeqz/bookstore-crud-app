@@ -9,6 +9,7 @@ const getBooks = async (req, res) => {
       limit = 10,
       search = '',
       category = '',
+      categoryId = '',
       sortBy = 'createdAt',
       sortOrder = 'desc'
     } = req.query;
@@ -25,7 +26,10 @@ const getBooks = async (req, res) => {
           { description: { contains: search, mode: 'insensitive' } }
         ]
       }),
-      ...(category && {
+      ...(categoryId && {
+        categoryId: parseInt(categoryId)
+      }),
+      ...(category && !categoryId && {
         category: { name: { contains: category, mode: 'insensitive' } }
       })
     };
