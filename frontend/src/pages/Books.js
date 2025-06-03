@@ -16,12 +16,13 @@ const Books = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingBook, setEditingBook] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchInput, setSearchInput] = useState(''); // For controlled input
   const [filterCategory, setFilterCategory] = useState('');
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
     totalCount: 0,
-    limit: 20
+    limit: 10
   });
 
   const fetchCategories = async () => {
@@ -82,13 +83,21 @@ const Books = () => {
     fetchBooks();
   }, [fetchBooks]);
 
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      fetchBooks();
-    }, 500); // 500ms debounce
+  // Remove the auto-search effect - now only search on button click or enter
+  const handleSearch = () => {
+    setSearchTerm(searchInput);
+  };
 
-    return () => clearTimeout(timeoutId);
-  }, [searchTerm, filterCategory, fetchBooks]);
+  const handleSearchKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput('');
+    setSearchTerm('');
+  };
 
   const handleCreateBook = async (bookData) => {
     try {
@@ -188,6 +197,15 @@ const Books = () => {
     fetchBooks(newPage);
   };
 
+  const handleLimitChange = (newLimit) => {
+    setPagination(prev => ({
+      ...prev,
+      limit: parseInt(newLimit),
+      currentPage: 1 // Reset to first page when changing limit
+    }));
+    // The useEffect will trigger fetchBooks automatically due to pagination.limit change
+  };
+
   if (loading) {
     return (
       <div className="books-page">
@@ -232,13 +250,36 @@ const Books = () => {
 
         <div className="books-filters">
           <div className="search-box">
-            <input
-              type="text"
-              placeholder="Search books by title or author..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
+            <div className="search-input-container">
+              <input
+                type="text"
+                placeholder="Search books by title or author..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyPress={handleSearchKeyPress}
+                className="search-input"
+              />
+              <div className="search-buttons">
+                <button 
+                  type="button"
+                  onClick={handleSearch}
+                  className="search-btn"
+                  title="Search"
+                >
+                  🔍
+                </button>
+                {(searchInput || searchTerm) && (
+                  <button 
+                    type="button"
+                    onClick={handleClearSearch}
+                    className="clear-btn"
+                    title="Clear search"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
           <div className="filter-box">
             <select
@@ -278,29 +319,49 @@ const Books = () => {
           onDelete={handleDeleteBook}
         />
 
-        {/* Pagination Controls */}
-        {pagination.totalPages > 1 && (
-          <div className="pagination">
-            <button 
-              onClick={() => handlePageChange(pagination.currentPage - 1)}
-              disabled={!pagination.hasPrevPage}
-              className="pagination-btn"
-            >
-              Previous
-            </button>
-            
-            <span className="pagination-info">
-              Page {pagination.currentPage} of {pagination.totalPages} 
-              ({pagination.totalCount} total books)
-            </span>
-            
-            <button 
-              onClick={() => handlePageChange(pagination.currentPage + 1)}
-              disabled={!pagination.hasNextPage}
-              className="pagination-btn"
-            >
-              Next
-            </button>
+        {/* Page Size and Pagination Controls */}
+        {pagination.totalCount > 0 && (
+          <div className="pagination-container">
+            <div className="page-size-selector">
+              <label htmlFor="page-size">Items per page:</label>
+              <select
+                id="page-size"
+                value={pagination.limit}
+                onChange={(e) => handleLimitChange(e.target.value)}
+                className="page-size-select"
+              >
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+
+            {/* Pagination Controls */}
+            {pagination.totalPages > 1 && (
+              <div className="pagination">
+                <button 
+                  onClick={() => handlePageChange(pagination.currentPage - 1)}
+                  disabled={!pagination.hasPrevPage}
+                  className="pagination-btn"
+                >
+                  Previous
+                </button>
+                
+                <span className="pagination-info">
+                  Page {pagination.currentPage} of {pagination.totalPages} 
+                  ({pagination.totalCount} total books)
+                </span>
+                
+                <button 
+                  onClick={() => handlePageChange(pagination.currentPage + 1)}
+                  disabled={!pagination.hasNextPage}
+                  className="pagination-btn"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
