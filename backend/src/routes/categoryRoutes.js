@@ -1,6 +1,3 @@
-// 🏷️ Category Routes
-// Handles category management for books
-
 const express = require('express');
 const { 
   getCategories, 

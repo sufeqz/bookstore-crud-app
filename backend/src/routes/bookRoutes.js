@@ -1,6 +1,3 @@
-// 📚 Book Routes
-// Handles all book CRUD operations
-
 const express = require('express');
 const { 
   getBooks, 
