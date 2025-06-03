@@ -123,7 +123,7 @@ const CategoryList = () => {
             {/* Categories Grid */}
             {categories.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">📂</div>
+                <div className="empty-icon">⚃</div>
                 <h3>No categories found</h3>
                 <p>
                   {searchTerm 
@@ -185,7 +185,7 @@ const CategoryList = () => {
                     disabled={currentPage === 1}
                     className="btn btn-secondary"
                   >
-                    ← Previous
+                    &larr; Previous
                   </button>
                   
                   <span className="page-info">
@@ -197,7 +197,7 @@ const CategoryList = () => {
                     disabled={categories.length < categoriesPerPage}
                     className="btn btn-secondary"
                   >
-                    Next →
+                    Next &rarr;
                   </button>
                 </div>
               </div>

@@ -120,7 +120,7 @@ const CategoryForm = () => {
           <h1>{isEditing ? 'Edit Category' : 'Add New Category'}</h1>
           <p>{isEditing ? 'Update category information' : 'Create a new category for your books'}</p>
           <Link to="/categories" className="btn btn-secondary">
-            ← Back to Categories
+            &larr; Back to Categories
           </Link>
         </div>
 
