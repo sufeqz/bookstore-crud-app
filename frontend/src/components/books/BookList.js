@@ -214,7 +214,7 @@ const BookList = () => {
                     disabled={currentPage === 1}
                     className="btn btn-secondary"
                   >
-                    ← Previous
+                    &larr; Previous
                   </button>
                   
                   <span className="page-info">
@@ -226,7 +226,7 @@ const BookList = () => {
                     disabled={books.length < booksPerPage}
                     className="btn btn-secondary"
                   >
-                    Next →
+                    Next &rarr;
                   </button>
                 </div>
               </div>
