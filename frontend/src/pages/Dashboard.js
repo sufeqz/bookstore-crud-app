@@ -1,101 +1,134 @@
-// 🏠 Dashboard Component - Main page after login
-
-import React from 'react';
-import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Navigation from '../components/Navigation';
+import { bookService } from '../services/bookService';
+import { categoryService } from '../services/categoryService';
 import './Dashboard.css';
 
 const Dashboard = () => {
-  const { user, logout } = useAuth();
+  const [stats, setStats] = useState({
+    totalBooks: 0,
+    totalCategories: 0
+  });
+  const [recentBooks, setRecentBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-  };
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const [booksResponse, categoriesResponse] = await Promise.all([
+          bookService.getBooks(),
+          categoryService.getCategories()
+        ]);
+
+        setStats({
+          totalBooks: booksResponse.data.length,
+          totalCategories: categoriesResponse.data.length
+        });
+
+        // Show only the first 5 books as recent books
+        setRecentBooks(booksResponse.data.slice(0, 5));
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="dashboard">
+        <Navigation />
+        <div className="dashboard-content">
+          <div className="loading">Loading dashboard...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="dashboard-container">
-      {/* 📊 Header with user info and logout */}
-      <header className="dashboard-header">
-        <div className="header-content">
-          <div className="header-left">
-            <h1>📚 BookStore Dashboard</h1>
-            <p>Welcome back, {user?.name}! 👋</p>
+    <div className="dashboard">
+      <Navigation />
+      <div className="dashboard-content">
+        <div className="dashboard-header">
+          <h1>Dashboard</h1>
+          <p>Welcome to your Book Management System</p>
+        </div>
+
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-icon">📚</div>
+            <div className="stat-info">
+              <h3>{stats.totalBooks}</h3>
+              <p>Total Books</p>
+            </div>
+            <button 
+              className="stat-action"
+              onClick={() => navigate('/books')}
+            >
+              View All
+            </button>
           </div>
-          <div className="header-right">
-            <span className="user-email">{user?.email}</span>
-            <button onClick={handleLogout} className="logout-button">
-              🚪 Logout
+
+          <div className="stat-card">
+            <div className="stat-icon">🏷️</div>
+            <div className="stat-info">
+              <h3>{stats.totalCategories}</h3>
+              <p>Categories</p>
+            </div>
+            <button 
+              className="stat-action"
+              onClick={() => navigate('/categories')}
+            >
+              Manage
             </button>
           </div>
         </div>
-      </header>
 
-      {/* 🎯 Main dashboard content */}
-      <main className="dashboard-main">
-        <div className="dashboard-grid">
-          {/* 📖 Books Section */}
-          <div className="dashboard-card">
-            <div className="card-icon">📖</div>
-            <h2>Manage Books</h2>
-            <p>Add, edit, delete and search through your book collection</p>
-            <div className="card-actions">
-              <Link to="/books" className="primary-button">
-                📚 View Books
-              </Link>
-              <Link to="/books/new" className="secondary-button">
-                ➕ Add Book
-              </Link>
-            </div>
+        <div className="recent-books">
+          <div className="section-header">
+            <h2>Recent Books</h2>
+            <button 
+              className="btn-primary"
+              onClick={() => navigate('/books')}
+            >
+              View All Books
+            </button>
           </div>
 
-          {/* 📂 Categories Section */}
-          <div className="dashboard-card">
-            <div className="card-icon">📂</div>
-            <h2>Manage Categories</h2>
-            <p>Organize your books by creating and managing categories</p>
-            <div className="card-actions">
-              <Link to="/categories" className="primary-button">
-                📂 View Categories
-              </Link>
-              <Link to="/categories/new" className="secondary-button">
-                ➕ Add Category
-              </Link>
+          {recentBooks.length > 0 ? (
+            <div className="books-grid">
+              {recentBooks.map(book => (
+                <div key={book.id} className="book-card">
+                  <div className="book-info">
+                    <h3>{book.title}</h3>
+                    <p className="book-author">by {book.author}</p>
+                    <p className="book-category">{book.category?.name || 'No Category'}</p>
+                  </div>
+                  <div className="book-meta">
+                    <span className="book-year">{book.publishedYear}</span>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-
-          {/* 📊 Stats Section */}
-          <div className="dashboard-card stats-card">
-            <div className="card-icon">📊</div>
-            <h2>Quick Stats</h2>
-            <div className="stats-grid">
-              <div className="stat-item">
-                <span className="stat-number">📖</span>
-                <span className="stat-label">Books</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-number">📂</span>
-                <span className="stat-label">Categories</span>
-              </div>
+          ) : (
+            <div className="empty-state">
+              <p>No books found. Start by adding your first book!</p>
+              <button 
+                className="btn-primary"
+                onClick={() => navigate('/books')}
+              >
+                Add First Book
+              </button>
             </div>
-            <p className="stats-note">* Data will load from your API</p>
-          </div>
-
-          {/* 🔍 Quick Actions */}
-          <div className="dashboard-card">
-            <div className="card-icon">🔍</div>
-            <h2>Quick Search</h2>
-            <p>Quickly find books or categories using our search feature</p>
-            <div className="search-shortcuts">
-              <Link to="/books?search=" className="search-link">
-                🔍 Search Books
-              </Link>
-              <Link to="/categories?search=" className="search-link">
-                🔍 Search Categories
-              </Link>
-            </div>
-          </div>
+          )}
         </div>
-      </main>
+      </div>
     </div>
   );
 };

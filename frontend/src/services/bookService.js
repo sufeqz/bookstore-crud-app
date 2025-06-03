@@ -1,11 +1,16 @@
-// Books Service - All book-related API calls
-// This mirrors your bookService.js but makes HTTP requests instead of database calls
-
 import api from './api';
 
 export const bookService = {
-  // Get all books with search and pagination
-  getAllBooks: async (params = {}) => {
+  async getBooks(params = {}) {
+    try {
+      const response = await api.get('/books', { params });
+      return { data: response.data.books || [] };
+    } catch (error) {
+      throw error.response?.data || { error: 'Failed to fetch books' };
+    }
+  },
+
+  async getAllBooks(params = {}) {
     try {
       const response = await api.get('/books', { params });
       return response.data;
@@ -14,8 +19,7 @@ export const bookService = {
     }
   },
 
-  // Get single book by ID
-  getBookById: async (id) => {
+  async getBook(id) {
     try {
       const response = await api.get(`/books/${id}`);
       return response.data;
@@ -24,8 +28,7 @@ export const bookService = {
     }
   },
 
-  // Create new book
-  createBook: async (bookData) => {
+  async createBook(bookData) {
     try {
       const response = await api.post('/books', bookData);
       return response.data;
@@ -34,8 +37,7 @@ export const bookService = {
     }
   },
 
-  // Update book
-  updateBook: async (id, bookData) => {
+  async updateBook(id, bookData) {
     try {
       const response = await api.patch(`/books/${id}`, bookData);
       return response.data;
@@ -44,13 +46,12 @@ export const bookService = {
     }
   },
 
-  // Delete book
-  deleteBook: async (id) => {
+  async deleteBook(id) {
     try {
       const response = await api.delete(`/books/${id}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || { error: 'Failed to delete book' };
     }
-  },
+  }
 };

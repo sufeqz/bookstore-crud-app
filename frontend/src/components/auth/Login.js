@@ -1,60 +1,51 @@
-// Login Component - Beautiful login form
-// This is a React component that handles user login
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { authService } from '../../services/authService';
 import './Auth.css';
 
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
+    password: ''
   });
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const { login } = useAuth(); // Get login function from context
-  const navigate = useNavigate(); // For redirecting after login
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
-  // Handle input changes - updates state when user types
   const handleChange = (e) => {
     setFormData({
-      ...formData, // Keep existing data
-      [e.target.name]: e.target.value, // Update the changed field
+      ...formData,
+      [e.target.name]: e.target.value
     });
+    setError('');
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
-    e.preventDefault(); // Prevent page refresh
+    e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      await login(formData);
-      navigate('/dashboard'); // Redirect to dashboard on success
-    } catch (err) {
-      setError(err.error || 'Login failed');
+      const response = await authService.login(formData.email, formData.password);
+      login(response.user, response.token);
+      navigate('/dashboard');
+    } catch (error) {
+      setError(error.error || 'Login failed');
     } finally {
       setLoading(false);
     }
   };
 
-  // JSX - the HTML-like syntax that React uses
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <div className="auth-header">
-          <h1>Book Store Login</h1>
-          <p>Welcome back! Please sign in to continue.</p>
-        </div>
-
-        {/* Error message */}
-        {error && <div className="error-message">{error}</div>}
-
-        {/* Login form */}
-        <form onSubmit={handleSubmit} className="auth-form">
+        <h2>Login</h2>
+        <form onSubmit={handleSubmit}>
+          {error && <div className="error-message">{error}</div>}
+          
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input
@@ -63,8 +54,8 @@ const Login = () => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="Enter your email"
               required
+              placeholder="Enter your email"
             />
           </div>
 
@@ -76,28 +67,19 @@ const Login = () => {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Enter your password"
               required
+              placeholder="Enter your password"
             />
           </div>
 
-          <button 
-            type="submit" 
-            className="auth-button"
-            disabled={loading}
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
+          <button type="submit" disabled={loading} className="auth-button">
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 
-        <div className="auth-footer">
-          <p>
-            Don't have an account?{' '}
-            <Link to="/signup" className="auth-link">
-              Create one here
-            </Link>
-          </p>
-        </div>
+        <p className="auth-link">
+          Don't have an account? <Link to="/signup">Sign up here</Link>
+        </p>
       </div>
     </div>
   );

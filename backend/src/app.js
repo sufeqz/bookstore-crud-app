@@ -19,7 +19,7 @@ app.locals.prisma = prisma;
 
 // 🛡️ Middleware
 app.use(cors({
-  origin: 'http://localhost:3000', // Allow frontend to connect
+  origin: ['http://localhost:3000', 'http://localhost:3001'], // Allow frontend to connect on both ports
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' })); // Parse JSON bodies

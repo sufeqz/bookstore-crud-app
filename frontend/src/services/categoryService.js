@@ -1,10 +1,16 @@
-// Categories Service - All category-related API calls
-
 import api from './api';
 
 export const categoryService = {
-  // Get all categories with search and pagination
-  getAllCategories: async (params = {}) => {
+  async getCategories(params = {}) {
+    try {
+      const response = await api.get('/categories', { params });
+      return { data: response.data.categories || [] };
+    } catch (error) {
+      throw error.response?.data || { error: 'Failed to fetch categories' };
+    }
+  },
+
+  async getAllCategories(params = {}) {
     try {
       const response = await api.get('/categories', { params });
       return response.data;
@@ -13,8 +19,7 @@ export const categoryService = {
     }
   },
 
-  // Get single category by ID
-  getCategoryById: async (id) => {
+  async getCategory(id) {
     try {
       const response = await api.get(`/categories/${id}`);
       return response.data;
@@ -23,8 +28,7 @@ export const categoryService = {
     }
   },
 
-  // Create new category
-  createCategory: async (categoryData) => {
+  async createCategory(categoryData) {
     try {
       const response = await api.post('/categories', categoryData);
       return response.data;
@@ -33,8 +37,7 @@ export const categoryService = {
     }
   },
 
-  // Update category
-  updateCategory: async (id, categoryData) => {
+  async updateCategory(id, categoryData) {
     try {
       const response = await api.patch(`/categories/${id}`, categoryData);
       return response.data;
@@ -43,13 +46,12 @@ export const categoryService = {
     }
   },
 
-  // Delete category
-  deleteCategory: async (id) => {
+  async deleteCategory(id) {
     try {
       const response = await api.delete(`/categories/${id}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || { error: 'Failed to delete category' };
     }
-  },
+  }
 };
