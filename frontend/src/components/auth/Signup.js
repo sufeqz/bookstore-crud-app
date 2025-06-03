@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/authService';
 import './Auth.css';
 
@@ -13,8 +12,8 @@ const Signup = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -23,12 +22,14 @@ const Signup = () => {
       [e.target.name]: e.target.value
     });
     setError('');
+    setSuccessMessage('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccessMessage('');
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
@@ -37,9 +38,21 @@ const Signup = () => {
     }
 
     try {
-      const response = await authService.signup(formData.name, formData.email, formData.password);
-      login(response.user, response.token);
-      navigate('/dashboard');
+      await authService.signup(formData.name, formData.email, formData.password);
+      setSuccessMessage('Account created successfully! Redirecting to login...');
+      
+      // Clear form
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
+      });
+      
+      // Redirect to login after 2 seconds
+      setTimeout(() => {
+        navigate('/login', { state: { fromSignup: true } });
+      }, 2000);
     } catch (error) {
       setError(error.error || 'Signup failed');
     } finally {
@@ -53,6 +66,7 @@ const Signup = () => {
         <h2>Sign Up</h2>
         <form onSubmit={handleSubmit}>
           {error && <div className="error-message">{error}</div>}
+          {successMessage && <div className="success-message">{successMessage}</div>}
           
           <div className="form-group">
             <label htmlFor="name">Name</label>

@@ -82,6 +82,16 @@
   font-size: 14px;
 }
 
+.success-message {
+  background: #c6f6d5;
+  color: #22543d;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 14px;
+}
+
 .auth-link {
   text-align: center;
   margin-top: 20px;
