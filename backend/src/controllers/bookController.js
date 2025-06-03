@@ -103,7 +103,7 @@ const getBook = async (req, res) => {
 
 const createBook = async (req, res) => {
   try {
-    const { title, author, description, price, categoryId } = req.body;
+    const { title, author, description, price, categoryId, publishedYear } = req.body;
 
     
     if (!title || !author || !price || !categoryId) {
@@ -116,6 +116,16 @@ const createBook = async (req, res) => {
       return res.status(400).json({ error: 'Price cannot be negative' });
     }
 
+    // Validate publishedYear if provided
+    if (publishedYear !== undefined && publishedYear !== null && publishedYear !== '') {
+      const year = parseInt(publishedYear);
+      if (isNaN(year) || year < 0 || year > new Date().getFullYear() + 1) {
+        return res.status(400).json({ 
+          error: 'Published year must be a valid year' 
+        });
+      }
+    }
+
     const category = await prisma.category.findUnique({
       where: { id: parseInt(categoryId) }
     });
@@ -124,15 +134,22 @@ const createBook = async (req, res) => {
       return res.status(400).json({ error: 'Invalid category' });
     }
 
+    const bookData = {
+      title,
+      author,
+      description,
+      price: parseFloat(price),
+      userId: req.user.id,
+      categoryId: parseInt(categoryId)
+    };
+
+    // Only add publishedYear if it's provided and valid
+    if (publishedYear !== undefined && publishedYear !== null && publishedYear !== '') {
+      bookData.publishedYear = parseInt(publishedYear);
+    }
+
     const book = await prisma.book.create({
-      data: {
-        title,
-        author,
-        description,
-        price: parseFloat(price),
-        userId: req.user.id,
-        categoryId: parseInt(categoryId)
-      },
+      data: bookData,
       include: {
         category: true,
         user: {
@@ -202,6 +219,22 @@ const updateBook = async (req, res) => {
         return res.status(400).json({ error: 'Invalid category' });
       }
       fieldsToUpdate.categoryId = categoryId;
+    }
+
+    // Handle publishedYear - allow setting, updating, or clearing it
+    if (updateData.publishedYear !== undefined) {
+      if (updateData.publishedYear === null || updateData.publishedYear === '') {
+        // Allow clearing the published year
+        fieldsToUpdate.publishedYear = null;
+      } else {
+        const year = parseInt(updateData.publishedYear);
+        if (isNaN(year) || year < 0 || year > new Date().getFullYear() + 1) {
+          return res.status(400).json({ 
+            error: 'Published year must be a valid year' 
+          });
+        }
+        fieldsToUpdate.publishedYear = year;
+      }
     }
 
     if (Object.keys(fieldsToUpdate).length === 0) {

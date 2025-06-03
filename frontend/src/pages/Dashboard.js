@@ -111,7 +111,7 @@ const Dashboard = () => {
                     <p className="book-category">{book.category?.name || 'No Category'}</p>
                   </div>
                   <div className="book-meta">
-                    <span className="book-year">{book.publishedYear}</span>
+                    <span className="book-year">{book.publishedYear || 'Unknown year'}</span>
                   </div>
                 </div>
               ))}

@@ -11,6 +11,7 @@ const Books = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingBook, setEditingBook] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,8 +38,15 @@ const Books = () => {
       console.log('Books response:', booksResponse);
       console.log('Categories response:', categoriesResponse);
       
-      setBooks(booksResponse.data);
-      setCategories(categoriesResponse.data);
+      // Ensure we have valid arrays with proper data
+      const booksData = booksResponse.data || [];
+      const categoriesData = categoriesResponse.data || [];
+      
+      // Filter out any invalid book entries
+      const validBooks = booksData.filter(book => book && book.id && book.title && book.author);
+      
+      setBooks(validBooks);
+      setCategories(categoriesData);
     } catch (error) {
       console.error('Error fetching data:', error);
       console.error('Error details:', error.response?.data);
@@ -52,27 +60,53 @@ const Books = () => {
   const handleCreateBook = async (bookData) => {
     try {
       const response = await bookService.createBook(bookData);
-      setBooks([...books, response.data]);
-      setShowForm(false);
-      setError('');
+      // Ensure the response is a valid book object before adding to state
+      if (response && response.id && response.title && response.author) {
+        setBooks([...books, response]);
+        setShowForm(false);
+        setError('');
+        setSuccessMessage(`Book "${response.title}" added successfully!`);
+        
+        // Clear success message after 5 seconds
+        setTimeout(() => {
+          setSuccessMessage('');
+        }, 5000);
+      } else {
+        console.error('Invalid book response:', response);
+        setError('Book was created but response format is invalid');
+      }
     } catch (error) {
       console.error('Error creating book:', error);
       setError('Failed to create book');
+      setSuccessMessage('');
     }
   };
 
   const handleUpdateBook = async (bookData) => {
     try {
       const response = await bookService.updateBook(editingBook.id, bookData);
-      setBooks(books.map(book => 
-        book.id === editingBook.id ? response.data : book
-      ));
-      setEditingBook(null);
-      setShowForm(false);
-      setError('');
+      // Ensure the response is a valid book object before updating state
+      if (response && response.id && response.title && response.author) {
+        setBooks(books.map(book => 
+          book.id === editingBook.id ? response : book
+        ));
+        setEditingBook(null);
+        setShowForm(false);
+        setError('');
+        setSuccessMessage(`Book "${response.title}" updated successfully!`);
+        
+        // Clear success message after 5 seconds
+        setTimeout(() => {
+          setSuccessMessage('');
+        }, 5000);
+      } else {
+        console.error('Invalid book update response:', response);
+        setError('Book was updated but response format is invalid');
+      }
     } catch (error) {
       console.error('Error updating book:', error);
       setError('Failed to update book');
+      setSuccessMessage('');
     }
   };
 
@@ -82,12 +116,24 @@ const Books = () => {
     }
 
     try {
+      // Find the book being deleted to get its title for the success message
+      const bookToDelete = books.find(book => book.id === bookId);
       await bookService.deleteBook(bookId);
       setBooks(books.filter(book => book.id !== bookId));
       setError('');
+      
+      if (bookToDelete) {
+        setSuccessMessage(`Book "${bookToDelete.title}" deleted successfully!`);
+        
+        // Clear success message after 5 seconds
+        setTimeout(() => {
+          setSuccessMessage('');
+        }, 5000);
+      }
     } catch (error) {
       console.error('Error deleting book:', error);
       setError('Failed to delete book');
+      setSuccessMessage('');
     }
   };
 
@@ -102,6 +148,11 @@ const Books = () => {
   };
 
   const filteredBooks = books.filter(book => {
+    // Check if book exists and has required properties
+    if (!book || !book.title || !book.author) {
+      return false;
+    }
+    
     const matchesSearch = book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          book.author.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !filterCategory || book.categoryId === parseInt(filterCategory);
@@ -140,6 +191,13 @@ const Books = () => {
           <div className="error-message">
             {error}
             <button onClick={() => setError('')}>×</button>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="success-message">
+            {successMessage}
+            <button onClick={() => setSuccessMessage('')}>×</button>
           </div>
         )}
 

@@ -5,6 +5,8 @@ const BookForm = ({ book, categories, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
     title: '',
     author: '',
+    description: '',
+    price: '',
     publishedYear: '',
     categoryId: ''
   });
@@ -16,6 +18,8 @@ const BookForm = ({ book, categories, onSubmit, onCancel }) => {
       setFormData({
         title: book.title || '',
         author: book.author || '',
+        description: book.description || '',
+        price: book.price || '',
         publishedYear: book.publishedYear || '',
         categoryId: book.categoryId || ''
       });
@@ -49,9 +53,12 @@ const BookForm = ({ book, categories, onSubmit, onCancel }) => {
       newErrors.author = 'Author is required';
     }
 
-    if (!formData.publishedYear) {
-      newErrors.publishedYear = 'Published year is required';
-    } else if (formData.publishedYear < 1000 || formData.publishedYear > new Date().getFullYear()) {
+    if (!formData.price || formData.price <= 0) {
+      newErrors.price = 'Price is required and must be greater than 0';
+    }
+
+    // Published year is optional, but if provided, validate it
+    if (formData.publishedYear && (formData.publishedYear < 1000 || formData.publishedYear > new Date().getFullYear() + 1)) {
       newErrors.publishedYear = 'Please enter a valid year';
     }
 
@@ -72,11 +79,18 @@ const BookForm = ({ book, categories, onSubmit, onCancel }) => {
 
     try {
       setLoading(true);
-      await onSubmit({
+      const submitData = {
         ...formData,
-        publishedYear: parseInt(formData.publishedYear),
+        price: parseFloat(formData.price),
         categoryId: parseInt(formData.categoryId)
-      });
+      };
+      
+      // Only include publishedYear if it's provided
+      if (formData.publishedYear && formData.publishedYear.toString().trim() !== '') {
+        submitData.publishedYear = parseInt(formData.publishedYear);
+      }
+      
+      await onSubmit(submitData);
     } catch (error) {
       console.error('Error submitting form:', error);
     } finally {
@@ -122,7 +136,37 @@ const BookForm = ({ book, categories, onSubmit, onCancel }) => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="publishedYear">Published Year *</label>
+            <label htmlFor="description">Description</label>
+            <textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              className={errors.description ? 'error' : ''}
+              placeholder="Enter book description (optional)"
+              rows="3"
+            />
+            {errors.description && <span className="error-text">{errors.description}</span>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="price">Price *</label>
+            <input
+              type="number"
+              id="price"
+              name="price"
+              value={formData.price}
+              onChange={handleChange}
+              className={errors.price ? 'error' : ''}
+              placeholder="Enter book price"
+              min="0"
+              step="0.01"
+            />
+            {errors.price && <span className="error-text">{errors.price}</span>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="publishedYear">Published Year</label>
             <input
               type="number"
               id="publishedYear"
@@ -130,9 +174,9 @@ const BookForm = ({ book, categories, onSubmit, onCancel }) => {
               value={formData.publishedYear}
               onChange={handleChange}
               className={errors.publishedYear ? 'error' : ''}
-              placeholder="Enter published year"
+              placeholder="Enter published year (optional)"
               min="1000"
-              max={new Date().getFullYear()}
+              max={new Date().getFullYear() + 1}
             />
             {errors.publishedYear && <span className="error-text">{errors.publishedYear}</span>}
           </div>

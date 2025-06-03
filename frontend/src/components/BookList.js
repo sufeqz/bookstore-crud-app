@@ -53,9 +53,19 @@ const BookList = ({ books, categories, onEdit, onDelete }) => {
                 <p className="book-author">
                   <span className="label">Author:</span> {book.author}
                 </p>
-                <p className="book-year">
-                  <span className="label">Published:</span> {book.publishedYear}
+                {book.description && (
+                  <p className="book-description">
+                    <span className="label">Description:</span> {book.description}
+                  </p>
+                )}
+                <p className="book-price">
+                  <span className="label">Price:</span> ${book.price}
                 </p>
+                {book.publishedYear && (
+                  <p className="book-year">
+                    <span className="label">Published:</span> {book.publishedYear}
+                  </p>
+                )}
                 <p className="book-category">
                   <span className="label">Category:</span>
                   <span className="category-tag">

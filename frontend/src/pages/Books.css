@@ -67,6 +67,27 @@
   margin-left: 1rem;
 }
 
+.success-message {
+  background: #c6f6d5;
+  color: #22543d;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.success-message button {
+  background: none;
+  border: none;
+  color: #22543d;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 1rem;
+}
+
 .books-filters {
   display: flex;
   gap: 1rem;

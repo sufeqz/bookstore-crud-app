@@ -25,13 +25,14 @@ model User {
 
 // 📚 Book model for the main CRUD operations
 model Book {
-  id          Int      @id @default(autoincrement())
-  title       String
-  author      String
-  description String?
-  price       Float
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            Int      @id @default(autoincrement())
+  title         String
+  author        String
+  description   String?
+  price         Float
+  publishedYear Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   
   // 👤 Relationship: A book belongs to a user
   userId      Int

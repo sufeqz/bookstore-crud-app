@@ -9,6 +9,7 @@ const Categories = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,9 +38,16 @@ const Categories = () => {
       setCategories([...categories, response.data]);
       setShowForm(false);
       setError('');
+      setSuccessMessage(`Category "${response.data.name}" created successfully!`);
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 5000);
     } catch (error) {
       console.error('Error creating category:', error);
       setError('Failed to create category');
+      setSuccessMessage('');
     }
   };
 
@@ -52,9 +60,16 @@ const Categories = () => {
       setEditingCategory(null);
       setShowForm(false);
       setError('');
+      setSuccessMessage(`Category "${response.data.name}" updated successfully!`);
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 5000);
     } catch (error) {
       console.error('Error updating category:', error);
       setError('Failed to update category');
+      setSuccessMessage('');
     }
   };
 
@@ -64,12 +79,24 @@ const Categories = () => {
     }
 
     try {
+      // Find the category being deleted to get its name for the success message
+      const categoryToDelete = categories.find(category => category.id === categoryId);
       await categoryService.deleteCategory(categoryId);
       setCategories(categories.filter(category => category.id !== categoryId));
       setError('');
+      
+      if (categoryToDelete) {
+        setSuccessMessage(`Category "${categoryToDelete.name}" deleted successfully!`);
+        
+        // Clear success message after 5 seconds
+        setTimeout(() => {
+          setSuccessMessage('');
+        }, 5000);
+      }
     } catch (error) {
       console.error('Error deleting category:', error);
       setError('Failed to delete category. It may be in use by some books.');
+      setSuccessMessage('');
     }
   };
 
@@ -120,6 +147,13 @@ const Categories = () => {
           <div className="error-message">
             {error}
             <button onClick={() => setError('')}>×</button>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="success-message">
+            {successMessage}
+            <button onClick={() => setSuccessMessage('')}>×</button>
           </div>
         )}
 
