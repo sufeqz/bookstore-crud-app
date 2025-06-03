@@ -1,9 +1,9 @@
-// 📂 Categories Service - All category-related API calls
+// Categories Service - All category-related API calls
 
 import api from './api';
 
 export const categoryService = {
-  // 📂 Get all categories with search and pagination
+  // Get all categories with search and pagination
   getAllCategories: async (params = {}) => {
     try {
       const response = await api.get('/categories', { params });
@@ -13,7 +13,7 @@ export const categoryService = {
     }
   },
 
-  // 📂 Get single category by ID
+  // Get single category by ID
   getCategoryById: async (id) => {
     try {
       const response = await api.get(`/categories/${id}`);
@@ -23,7 +23,7 @@ export const categoryService = {
     }
   },
 
-  // ➕ Create new category
+  // Create new category
   createCategory: async (categoryData) => {
     try {
       const response = await api.post('/categories', categoryData);
@@ -33,7 +33,7 @@ export const categoryService = {
     }
   },
 
-  // ✏️ Update category
+  // Update category
   updateCategory: async (id, categoryData) => {
     try {
       const response = await api.patch(`/categories/${id}`, categoryData);
@@ -43,7 +43,7 @@ export const categoryService = {
     }
   },
 
-  // 🗑️ Delete category
+  // Delete category
   deleteCategory: async (id) => {
     try {
       const response = await api.delete(`/categories/${id}`);
