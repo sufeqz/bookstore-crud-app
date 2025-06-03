@@ -1,11 +1,7 @@
-// 📚 Book Controller
-// Handles all book CRUD operations
-
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
-// 📋 Get all books for the authenticated user with pagination and search
 const getBooks = async (req, res) => {
   try {
     const {
@@ -21,7 +17,6 @@ const getBooks = async (req, res) => {
     const limitNum = Math.min(100, Math.max(1, parseInt(limit))); // Max 100 items per page
     const skip = (pageNum - 1) * limitNum;
 
-    // 🔍 Build search conditions (removed userId filter - show all books to all users)
     const whereConditions = {
       ...(search && {
         OR: [
@@ -51,7 +46,6 @@ const getBooks = async (req, res) => {
       prisma.book.count({ where: whereConditions })
     ]);
 
-    // 📊 Calculate pagination info
     const totalPages = Math.ceil(totalCount / limitNum);
     const hasNextPage = pageNum < totalPages;
     const hasPrevPage = pageNum > 1;
@@ -86,7 +80,6 @@ const getBook = async (req, res) => {
     const book = await prisma.book.findUnique({
       where: { 
         id: parseInt(id)
-        // Removed userId filter - allow any user to view any book
       },
       include: {
         category: true,
@@ -123,7 +116,6 @@ const createBook = async (req, res) => {
       return res.status(400).json({ error: 'Price cannot be negative' });
     }
 
-    // 🔍 Check if category exists
     const category = await prisma.category.findUnique({
       where: { id: parseInt(categoryId) }
     });
@@ -132,7 +124,6 @@ const createBook = async (req, res) => {
       return res.status(400).json({ error: 'Invalid category' });
     }
 
-    // 📚 Create book
     const book = await prisma.book.create({
       data: {
         title,
@@ -157,13 +148,11 @@ const createBook = async (req, res) => {
   }
 };
 
-// ✏️ Update a book (PATCH - partial update)
 const updateBook = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
 
-    // 🔍 Check if book exists and belongs to user (only owner can update)
     const existingBook = await prisma.book.findFirst({
       where: { 
         id: parseInt(id),
@@ -177,10 +166,8 @@ const updateBook = async (req, res) => {
       });
     }
 
-    // 🧹 Remove undefined/null values and prepare update object
     const fieldsToUpdate = {};
     
-    // Only include fields that are provided and not empty
     if (updateData.title !== undefined && updateData.title.trim() !== '') {
       fieldsToUpdate.title = updateData.title.trim();
     }
@@ -217,12 +204,10 @@ const updateBook = async (req, res) => {
       fieldsToUpdate.categoryId = categoryId;
     }
 
-    // 🚫 Check if there are any fields to update
     if (Object.keys(fieldsToUpdate).length === 0) {
       return res.status(400).json({ error: 'No valid fields provided for update' });
     }
 
-    // 🔍 Check for duplicate title/author combination (if title or author is being updated)
     if (fieldsToUpdate.title || fieldsToUpdate.author) {
       const titleToCheck = fieldsToUpdate.title || existingBook.title;
       const authorToCheck = fieldsToUpdate.author || existingBook.author;
@@ -231,7 +216,7 @@ const updateBook = async (req, res) => {
         where: {
           title: titleToCheck,
           author: authorToCheck,
-          id: { not: parseInt(id) } // Exclude current book
+          id: { not: parseInt(id) } 
         }
       });
       
@@ -242,7 +227,6 @@ const updateBook = async (req, res) => {
       }
     }
 
-    // 📝 Update book with only the provided fields
     const updatedBook = await prisma.book.update({
       where: { id: parseInt(id) },
       data: fieldsToUpdate,
@@ -265,12 +249,10 @@ const updateBook = async (req, res) => {
   }
 };
 
-// 🗑️ Delete a book
 const deleteBook = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 🔍 Check if book exists and belongs to user (only owner can delete)
     const existingBook = await prisma.book.findFirst({
       where: { 
         id: parseInt(id),
@@ -284,7 +266,6 @@ const deleteBook = async (req, res) => {
       });
     }
 
-    // 🗑️ Delete book
     await prisma.book.delete({
       where: { id: parseInt(id) }
     });
