@@ -1,4 +1,4 @@
-// 🔑 Login Component - Beautiful login form
+// Login Component - Beautiful login form
 // This is a React component that handles user login
 
 import React, { useState } from 'react';
@@ -7,7 +7,6 @@ import { useAuth } from '../../context/AuthContext';
 import './Auth.css';
 
 const Login = () => {
-  // 📋 State for form data - React uses state to track changing data
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -15,11 +14,10 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // 🎣 Hooks - special React functions
   const { login } = useAuth(); // Get login function from context
   const navigate = useNavigate(); // For redirecting after login
 
-  // 📝 Handle input changes - updates state when user types
+  // Handle input changes - updates state when user types
   const handleChange = (e) => {
     setFormData({
       ...formData, // Keep existing data
@@ -27,7 +25,7 @@ const Login = () => {
     });
   };
 
-  // 🚀 Handle form submission
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault(); // Prevent page refresh
     setLoading(true);
@@ -43,22 +41,22 @@ const Login = () => {
     }
   };
 
-  // 🎨 JSX - the HTML-like syntax that React uses
+  // JSX - the HTML-like syntax that React uses
   return (
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <h1>📚 BookStore Login</h1>
+          <h1>Book Store Login</h1>
           <p>Welcome back! Please sign in to continue.</p>
         </div>
 
-        {/* ⚠️ Error message */}
+        {/* Error message */}
         {error && <div className="error-message">{error}</div>}
 
-        {/* 📝 Login form */}
+        {/* Login form */}
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label htmlFor="email">📧 Email</label>
+            <label htmlFor="email">Email</label>
             <input
               type="email"
               id="email"
@@ -71,7 +69,7 @@ const Login = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">🔒 Password</label>
+            <label htmlFor="password">Password</label>
             <input
               type="password"
               id="password"
@@ -88,7 +86,7 @@ const Login = () => {
             className="auth-button"
             disabled={loading}
           >
-            {loading ? '🔄 Signing in...' : '🔑 Sign In'}
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 

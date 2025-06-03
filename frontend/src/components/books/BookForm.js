@@ -1,4 +1,4 @@
-// 📝 BookForm Component - Add and edit books
+// BookForm Component - Add and edit books
 // This component handles both creating new books and editing existing ones
 
 import React, { useState, useEffect } from 'react';
@@ -12,7 +12,7 @@ const BookForm = () => {
   const { id } = useParams(); // Get book ID from URL (for editing)
   const isEditing = !!id; // True if we're editing, false if creating
 
-  // 📋 Form state
+  // Form state
   const [formData, setFormData] = useState({
     title: '',
     author: '',
@@ -27,7 +27,7 @@ const BookForm = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // 🔄 Load data when component mounts
+  // Load data when component mounts
   useEffect(() => {
     loadCategories();
     if (isEditing) {
@@ -35,7 +35,7 @@ const BookForm = () => {
     }
   }, [id, isEditing]);
 
-  // 📂 Load categories for dropdown
+  // Load categories for dropdown
   const loadCategories = async () => {
     try {
       const data = await categoryService.getAllCategories();
@@ -45,7 +45,7 @@ const BookForm = () => {
     }
   };
 
-  // 📖 Load book data for editing
+  // Load book data for editing
   const loadBook = async () => {
     try {
       setLoading(true);
@@ -65,7 +65,7 @@ const BookForm = () => {
     }
   };
 
-  // 📝 Handle input changes
+  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -74,7 +74,7 @@ const BookForm = () => {
     }));
   };
 
-  // ✅ Validate form
+  // Validate form
   const validateForm = () => {
     if (!formData.title.trim()) {
       setError('Title is required');
@@ -95,7 +95,7 @@ const BookForm = () => {
     return true;
   };
 
-  // 🚀 Handle form submission
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -108,7 +108,7 @@ const BookForm = () => {
     setLoading(true);
 
     try {
-      // 🔧 Prepare data for API
+      // Prepare data for API
       const bookData = {
         title: formData.title.trim(),
         author: formData.author.trim(),
@@ -119,16 +119,16 @@ const BookForm = () => {
       };
 
       if (isEditing) {
-        // ✏️ Update existing book
+        // Update existing book
         await bookService.updateBook(parseInt(id), bookData);
         setSuccess('Book updated successfully!');
       } else {
-        // ➕ Create new book
+        // Create new book
         await bookService.createBook(bookData);
         setSuccess('Book created successfully!');
       }
 
-      // 🎉 Redirect after success
+      // Redirect after success
       setTimeout(() => {
         navigate('/books');
       }, 1500);
@@ -152,27 +152,27 @@ const BookForm = () => {
   return (
     <div className="book-form-container">
       <div className="container">
-        {/* 📊 Header */}
+        {/* Header */}
         <div className="form-header">
-          <h1>{isEditing ? '✏️ Edit Book' : '➕ Add New Book'}</h1>
+          <h1>{isEditing ? 'Edit Book' : 'Add New Book'}</h1>
           <p>{isEditing ? 'Update book information' : 'Add a new book to your library'}</p>
           <Link to="/books" className="btn btn-secondary">
             ← Back to Books
           </Link>
         </div>
 
-        {/* 📝 Form */}
+        {/* Form */}
         <div className="form-container">
           <form onSubmit={handleSubmit} className="book-form">
-            {/* ⚠️ Messages */}
+            {/* Messages */}
             {error && <div className="alert alert-error">{error}</div>}
             {success && <div className="alert alert-success">{success}</div>}
 
             <div className="form-row">
-              {/* 📖 Title */}
+              {/* Title */}
               <div className="form-group">
                 <label htmlFor="title" className="form-label">
-                  📖 Book Title *
+                  Book Title *
                 </label>
                 <input
                   type="text"
@@ -186,10 +186,10 @@ const BookForm = () => {
                 />
               </div>
 
-              {/* 👤 Author */}
+              {/* Author */}
               <div className="form-group">
                 <label htmlFor="author" className="form-label">
-                  👤 Author *
+                  Author *
                 </label>
                 <input
                   type="text"
@@ -205,10 +205,10 @@ const BookForm = () => {
             </div>
 
             <div className="form-row">
-              {/* 💰 Price */}
+              {/* Price */}
               <div className="form-group">
                 <label htmlFor="price" className="form-label">
-                  💰 Price *
+                  Price *
                 </label>
                 <input
                   type="number"
@@ -224,10 +224,10 @@ const BookForm = () => {
                 />
               </div>
 
-              {/* 📦 Stock */}
+              {/* Stock */}
               <div className="form-group">
                 <label htmlFor="stock" className="form-label">
-                  📦 Stock Quantity *
+                  Stock Quantity *
                 </label>
                 <input
                   type="number"
@@ -242,10 +242,10 @@ const BookForm = () => {
                 />
               </div>
 
-              {/* 📂 Category */}
+              {/* Category */}
               <div className="form-group">
                 <label htmlFor="categoryId" className="form-label">
-                  📂 Category
+                  Category
                 </label>
                 <select
                   id="categoryId"
@@ -264,10 +264,10 @@ const BookForm = () => {
               </div>
             </div>
 
-            {/* 📄 Description */}
+            {/* Description */}
             <div className="form-group">
               <label htmlFor="description" className="form-label">
-                📄 Description
+                Description
               </label>
               <textarea
                 id="description"
@@ -280,7 +280,7 @@ const BookForm = () => {
               />
             </div>
 
-            {/* 🔘 Submit Button */}
+            {/* Submit Button */}
             <div className="form-actions">
               <button
                 type="submit"
@@ -293,7 +293,7 @@ const BookForm = () => {
                     {isEditing ? 'Updating...' : 'Creating...'}
                   </>
                 ) : (
-                  isEditing ? '✅ Update Book' : '➕ Create Book'
+                  isEditing ? 'Update Book' : 'Create Book'
                 )}
               </button>
               

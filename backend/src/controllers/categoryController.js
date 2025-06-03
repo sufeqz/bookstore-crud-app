@@ -45,7 +45,6 @@ const getCategories = async (req, res) => {
       prisma.category.count({ where: whereConditions })
     ]);
 
-    // 📊 Calculate pagination info
     const totalPages = Math.ceil(totalCount / limitNum);
     const hasNextPage = pageNum < totalPages;
     const hasPrevPage = pageNum > 1;
@@ -72,19 +71,16 @@ const getCategories = async (req, res) => {
   }
 };
 
-// ➕ Create a new category
 const createCategory = async (req, res) => {
   try {
     const { name, description } = req.body;
 
-    // ✅ Validation
     if (!name || name.trim() === '') {
       return res.status(400).json({ error: 'Category name is required' });
     }
 
     const trimmedName = name.trim();
 
-    // 🔍 Check if category already exists
     const existingCategory = await prisma.category.findUnique({
       where: { name: trimmedName }
     });
@@ -93,7 +89,6 @@ const createCategory = async (req, res) => {
       return res.status(400).json({ error: 'Category with this name already exists' });
     }
 
-    // 🏷️ Create category
     const category = await prisma.category.create({
       data: {
         name: trimmedName,
@@ -111,7 +106,6 @@ const createCategory = async (req, res) => {
   }
 };
 
-// 👁️ Get a specific category
 const getCategory = async (req, res) => {
   try {
     const { id } = req.params;
@@ -147,13 +141,11 @@ const getCategory = async (req, res) => {
   }
 };
 
-// ✏️ Update a category (PATCH - partial update)
 const updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
 
-    // 🔍 Check if category exists
     const existingCategory = await prisma.category.findUnique({
       where: { id: parseInt(id) }
     });
@@ -168,7 +160,6 @@ const updateCategory = async (req, res) => {
     if (updateData.name !== undefined && updateData.name.trim() !== '') {
       const trimmedName = updateData.name.trim();
       
-      // Check for duplicate name
       const duplicateCategory = await prisma.category.findFirst({
         where: {
           name: trimmedName,
@@ -189,12 +180,10 @@ const updateCategory = async (req, res) => {
       fieldsToUpdate.description = updateData.description ? updateData.description.trim() : null;
     }
 
-    // 🚫 Check if there are any fields to update
     if (Object.keys(fieldsToUpdate).length === 0) {
       return res.status(400).json({ error: 'No valid fields provided for update' });
     }
 
-    // 📝 Update category
     const updatedCategory = await prisma.category.update({
       where: { id: parseInt(id) },
       data: fieldsToUpdate,
@@ -216,12 +205,10 @@ const updateCategory = async (req, res) => {
   }
 };
 
-// 🗑️ Delete a category
 const deleteCategory = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 🔍 Check if category exists
     const existingCategory = await prisma.category.findUnique({
       where: { id: parseInt(id) },
       include: {
@@ -235,7 +222,6 @@ const deleteCategory = async (req, res) => {
       return res.status(404).json({ error: 'Category not found' });
     }
 
-    // 🚫 Check if category has books
     if (existingCategory._count.books > 0) {
       return res.status(400).json({ 
         error: `Cannot delete category. It has ${existingCategory._count.books} book(s) associated with it.`,
@@ -243,7 +229,6 @@ const deleteCategory = async (req, res) => {
       });
     }
 
-    // 🗑️ Delete category
     await prisma.category.delete({
       where: { id: parseInt(id) }
     });

@@ -1,10 +1,10 @@
-// 🔐 Authentication Service - All login/signup logic
+// Authentication Service - All login/signup logic
 // This is like your authService.js in the backend but for frontend
 
 import api from './api';
 
 export const authService = {
-  // 📝 User signup
+  // User signup
   signup: async (userData) => {
     try {
       const response = await api.post('/signup', userData);
@@ -21,7 +21,7 @@ export const authService = {
     }
   },
 
-  // 🔑 User login
+  // User login
   login: async (credentials) => {
     try {
       const response = await api.post('/login', credentials);
@@ -38,19 +38,19 @@ export const authService = {
     }
   },
 
-  // 🚪 User logout
+  // User logout
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   },
 
-  // 👤 Get current user from localStorage
+  // Get current user from localStorage
   getCurrentUser: () => {
     const user = localStorage.getItem('user');
     return user ? JSON.parse(user) : null;
   },
 
-  // 🔍 Check if user is authenticated
+  // Check if user is authenticated
   isAuthenticated: () => {
     return !!localStorage.getItem('token');
   },

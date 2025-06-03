@@ -1,12 +1,12 @@
-// 🌐 API Configuration - This handles all communication with your backend
+// API Configuration - This handles all communication with your backend
 // Think of this as the "messenger" between frontend and backend
 
 import axios from 'axios';
 
-// 📍 Base URL - where your backend server is running
+// Base URL - where your backend server is running
 const API_BASE_URL = 'http://localhost:8000/api';
 
-// 🛠️ Create axios instance with default config
+// Create axios instance with default config
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -14,7 +14,7 @@ const api = axios.create({
   },
 });
 
-// 🔐 Request interceptor - automatically adds JWT token to requests
+// Request interceptor - automatically adds JWT token to requests
 api.interceptors.request.use(
   (config) => {
     // Get token from localStorage (where we'll store it after login)
@@ -29,7 +29,7 @@ api.interceptors.request.use(
   }
 );
 
-// 📤 Response interceptor - handles errors globally
+// Response interceptor - handles errors globally
 api.interceptors.response.use(
   (response) => response,
   (error) => {

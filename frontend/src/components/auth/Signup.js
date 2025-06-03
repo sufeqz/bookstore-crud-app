@@ -1,4 +1,3 @@
-// 📝 Signup Component - Beautiful registration form
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -30,7 +29,6 @@ const Signup = () => {
     setLoading(true);
     setError('');
 
-    // ✅ Validation - check if passwords match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
@@ -44,7 +42,6 @@ const Signup = () => {
     }
 
     try {
-      // 🚀 Only send required fields to backend
       const { confirmPassword, ...signupData } = formData;
       await signup(signupData);
       navigate('/dashboard');
@@ -59,7 +56,7 @@ const Signup = () => {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <h1>📚 Join BookStore</h1>
+          <h1>Join BookStore</h1>
           <p>Create your account to get started!</p>
         </div>
 
@@ -67,7 +64,7 @@ const Signup = () => {
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label htmlFor="name">👤 Full Name</label>
+            <label htmlFor="name">Full Name</label>
             <input
               type="text"
               id="name"
@@ -80,7 +77,7 @@ const Signup = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="email">📧 Email</label>
+            <label htmlFor="email">Email</label>
             <input
               type="email"
               id="email"
@@ -93,7 +90,7 @@ const Signup = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">🔒 Password</label>
+            <label htmlFor="password">Password</label>
             <input
               type="password"
               id="password"
@@ -106,7 +103,7 @@ const Signup = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword">🔒 Confirm Password</label>
+            <label htmlFor="confirmPassword">Confirm Password</label>
             <input
               type="password"
               id="confirmPassword"
@@ -123,7 +120,7 @@ const Signup = () => {
             className="auth-button"
             disabled={loading}
           >
-            {loading ? '🔄 Creating account...' : '📝 Create Account'}
+            {loading ? 'Creating account...' : 'Create Account'}
           </button>
         </form>
 
